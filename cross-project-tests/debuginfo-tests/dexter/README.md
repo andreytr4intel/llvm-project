@@ -6,7 +6,7 @@ DExTer is a suite of tools used to evaluate the "User Debugging Experience". DEx
 
 ## Supported Debuggers
 
-DExTer currently supports the Visual Studio 2015 and Visual Studio 2017 debuggers via the [DTE interface](https://docs.microsoft.com/en-us/dotnet/api/envdte.dte), and LLDB via its [Python interface](https://lldb.llvm.org/python-reference.html). GDB is not currently supported.
+DExTer currently supports the Visual Studio 2015 and Visual Studio 2017 debuggers via the [DTE interface](https://docs.microsoft.com/en-us/dotnet/api/envdte.dte), LLDB via its [Python interface](https://lldb.llvm.org/python-reference.html) and [GDB](README_gdb.md) via [RPyC interface](https://pypi.org/project/rpyc/).
 
 The following command evaluates your environment, listing the available and compatible debuggers:
 
@@ -54,7 +54,7 @@ The sample test case (tests/nostdlib/fibonacci) looks like this:
     7.  DEX_NOINLINE
     8.  void Fibonacci(int terms, int& total)
     9.  {
-    0.      int first = 0;
+    10.     int first = 0;
     11.     int second = 1;
     12.     for (int i = 0; i < terms; ++i)
     13.     {
@@ -74,15 +74,15 @@ The sample test case (tests/nostdlib/fibonacci) looks like this:
     27.
     28. /*
     29. DexExpectWatchValue('i', '0', '1', '2', '3', '4',
-    30.                     from_line='start', to_line='end')
+    30.                     from_line=ref('start'), to_line=ref('end'))
     31. DexExpectWatchValue('first', '0', '1', '2', '3', '5',
-    32.                     from_line='start', to_line='end')
+    32.                     from_line=ref('start'), to_line=ref('end'))
     33. DexExpectWatchValue('second', '1', '2', '3', '5',
-    34                      from_line='start', to_line='end')
+    34.                     from_line=ref('start'), to_line=ref('end'))
     35. DexExpectWatchValue('total', '0', '1', '2', '4', '7',
-    36.                     from_line='start', to_line='end')
+    36.                     from_line=ref('start'), to_line=ref('end'))
     37. DexExpectWatchValue('next', '1', '2', '3', '5', '8',
-    38.                     from_line='start', to_line='end')
+    38.                     from_line=ref('start'), to_line=ref('end'))
     39. DexExpectWatchValue('total', '7', on_line=25)
     40. DexExpectStepKind('FUNC_EXTERNAL', 0)
     41. */

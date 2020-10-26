@@ -38,7 +38,16 @@ class Tool(ToolBase):
         with open(self.context.options.controller_path, 'rb') as fp:
             self.debugger_controller = pickle.load(fp)
         self.controller_path = self.context.options.controller_path   
-        self.context = self.debugger_controller.context
+#        self.context = self.debugger_controller.context
+        self.context.o = self.debugger_controller.context.o
+        self.debugger_controller.context.options.working_directory = (
+            self.context.options.working_directory[:])
+        self.debugger_controller.context.options.unittest = self.context.options.unittest # the same?
+        self.debugger_controller.context.options.controller_path = self.context.options.controller_path
+        self.context.options = self.debugger_controller.context.options
+        self.context.root_directory = self.debugger_controller.context.root_directory # must be the same
+        self.context.version = self.debugger_controller.context.version # ~the same (s/run debugger internal/test/)
+        self.context.working_directory = self.debugger_controller.context.working_directory
         self.options = self.context.options
         Timer.display = self.options.time_report
 

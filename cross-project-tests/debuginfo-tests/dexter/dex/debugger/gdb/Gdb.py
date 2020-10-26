@@ -35,11 +35,12 @@ except ImportError:
 import os
 import sys
 import shutil
+import shlex
 from subprocess import CalledProcessError, check_output, STDOUT, Popen
 
 from dex.dextIR import FrameIR, LocIR, StepIR, StopReason, ValueIR
 from dex.dextIR import ProgramState, StackFrame, SourceLocation
-from dex.debugger.DebuggerBase import DebuggerBase
+from dex.debugger.DebuggerBase import DebuggerBase, watch_is_active
 from dex.utils.Exceptions import DebuggerException, LoadDebuggerException
 
 # Timeout numbers for gdb starting and connecting to it -- these were
@@ -197,12 +198,30 @@ class Gdb(DebuggerBase):
   def go(self):
     self.gdb.execute("continue")
 
-  def launch(self):
-    self.gdb.execute("run")
+  def launch(self, cmdline):
+    if self.context.options.target_run_args:
+      cmdline += shlex.split(self.context.options.target_run_args)
+    cmdline_str = ' '.join(cmdline)
+    if cmdline_str:
+      cmdline_str = ' ' + cmdline_str
+    self.gdb.execute("run" + cmdline_str)
 
-  def add_breakpoint(self, file_, line):
+  def _add_breakpoint(self, file_, line):
+    return self._add_conditional_breakpoint(file_, line, '')
+
+  def _add_conditional_breakpoint(self, file_, line, condition):
     file_ = os.path.basename(file_)
-    self.gdb.Breakpoint('{}:{}'.format(file_, line))
+    if condition:
+      condition = 'if ' + condition
+    return self.gdb.Breakpoint('{}:{}{}'.format(file_, line, condition)).number
+
+  def get_triggered_breakpoint_ids(self):
+    breakpoint_ids = set()
+    return breakpoint_ids
+
+  def delete_breakpoints(self, ids):
+    for id in ids:
+      print(id)
 
   def clear_breakpoints(self):
     bps = self.gdb.breakpoints()
@@ -274,7 +293,7 @@ class Gdb(DebuggerBase):
       return StopReason.STEP
     return StopReason.OTHER
 
-  def get_step_info(self):
+  def _get_step_info(self, watches, step_index):
     # Get the last event we look at.
     if len(self.rpyc_obj.root.events) > 0:
       evt = self.rpyc_obj.root.events[-1]
@@ -315,6 +334,7 @@ class Gdb(DebuggerBase):
       }
 
       loc = LocIR(**loc_dict)
+      valid_loc_for_watch = loc.path and os.path.exists(loc.path)
 
       # XXX is_inlined, not clear that gdb presents this?
       fr = FrameIR(function = str(function), is_inlined = False, loc = loc)
@@ -324,12 +344,19 @@ class Gdb(DebuggerBase):
                                is_inlined=fr.is_inlined,
                                location=SourceLocation(**loc_dict),
                                watches={})
-      for expr in map(
-          lambda watch, idx=i: self.evaluate_expression(watch, idx),
-          self.watches):
-          state_frame.watches[expr.expression] = expr
+      if valid_loc_for_watch:
+        for expr in map(
+            # Filter out watches that are not active in the current frame,
+            # and then evaluate all the active watches.
+            lambda watch_info, idx=i:
+                self.evaluate_expression(watch_info.expression, idx),
+            filter(
+                lambda watch_info, idx=i, line_no=loc.lineno, loc_path=loc.path:
+                    watch_is_active(watch_info, loc_path, idx, line_no),
+                watches)):
+            state_frame.watches[expr.expression] = expr
       state_frames.append(state_frame)
 
-    return StepIR(step_index = self.step_index, frames = firs,
+    return StepIR(step_index = step_index, frames = firs,
                   stop_reason = reason,
                   program_state = ProgramState(state_frames))
