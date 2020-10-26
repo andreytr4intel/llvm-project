@@ -200,9 +200,30 @@ class Gdb(DebuggerBase):
   def launch(self):
     self.gdb.execute("run")
 
-  def add_breakpoint(self, file_, line):
+  def _add_breakpoint(self, file_, line):
     file_ = os.path.basename(file_)
     self.gdb.Breakpoint('{}:{}'.format(file_, line))
+
+  def _add_conditional_breakpoint(self, file_, line, condition):
+#    column = 1
+#    self._debugger.Breakpoints.Add('', file_, line, column, condition)
+    file_ = os.path.basename(file_)
+    self.gdb.Breakpoint('{}:{}'.format(file_, line))
+
+  def _delete_conditional_breakpoint(self, file_, line, condition):
+#    for bp in self._debugger.Breakpoints:
+#      for bound_bp in bp.Children:
+#        if (bound_bp.File == file_ and bound_bp.FileLine == line and
+#          bound_bp.Condition == condition):
+#          bp.Delete()
+#          break
+    file_ = os.path.basename(file_)
+    for bp in self.gdb.breakpoints():
+      for bound_bp in bp.Children:
+        if (bound_bp.File == file_ and bound_bp.FileLine == line and
+          bound_bp.Condition == condition):
+          x.delete()
+          break
 
   def clear_breakpoints(self):
     bps = self.gdb.breakpoints()
@@ -274,7 +295,7 @@ class Gdb(DebuggerBase):
       return StopReason.STEP
     return StopReason.OTHER
 
-  def get_step_info(self):
+  def _get_step_info(self, watches, step_index):
     # Get the last event we look at.
     if len(self.rpyc_obj.root.events) > 0:
       evt = self.rpyc_obj.root.events[-1]
@@ -326,10 +347,10 @@ class Gdb(DebuggerBase):
                                watches={})
       for expr in map(
           lambda watch, idx=i: self.evaluate_expression(watch, idx),
-          self.watches):
+          watches):
           state_frame.watches[expr.expression] = expr
       state_frames.append(state_frame)
 
-    return StepIR(step_index = self.step_index, frames = firs,
+    return StepIR(step_index = step_index, frames = firs,
                   stop_reason = reason,
                   program_state = ProgramState(state_frames))
