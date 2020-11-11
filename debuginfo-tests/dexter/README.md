@@ -6,7 +6,7 @@ DExTer is a suite of tools used to evaluate the "User Debugging Experience". DEx
 
 ## Supported Debuggers
 
-DExTer currently supports the Visual Studio 2015 and Visual Studio 2017 debuggers via the [DTE interface](https://docs.microsoft.com/en-us/dotnet/api/envdte.dte), and LLDB via its [Python interface](https://lldb.llvm.org/python-reference.html). GDB is not currently supported.
+DExTer currently supports the Visual Studio 2015 and Visual Studio 2017 debuggers via the [DTE interface](https://docs.microsoft.com/en-us/dotnet/api/envdte.dte), LLDB via its [Python interface](https://lldb.llvm.org/python-reference.html) and GDB via [RPyC interface](https://pypi.org/project/rpyc/).
 
 The following command evaluates your environment, listing the available and compatible debuggers:
 
@@ -54,7 +54,7 @@ The sample test case (tests/nostdlib/fibonacci) looks like this:
     7.  DEX_NOINLINE
     8.  void Fibonacci(int terms, int& total)
     9.  {
-    0.      int first = 0;
+    10.     int first = 0;
     11.     int second = 1;
     12.     for (int i = 0; i < terms; ++i)
     13.     {
